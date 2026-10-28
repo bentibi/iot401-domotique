@@ -1,0 +1,12 @@
+.git/
+.venv/
+__pycache__/
+*.pyc
+*.key
+*.pem
+*.p12
+*.pfx
+certs/
+certificats/
+preuves/
+docs/
