@@ -6,6 +6,7 @@ x-logs: &logs
     max-size: "1m"
     max-file: "2"
     compress: "false"
+
 x-application: &application
   build:
     context: .
@@ -37,13 +38,13 @@ services:
       - cert-test:/volumes/capteur-test
 
   broker:
-    image: eclipse-mosquitto:2.0.22
+    build:
+      context: .
+      dockerfile: mosquitto/Dockerfile
     depends_on:
       initialisation-pki:
         condition: service_completed_successfully
     volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      - ./mosquitto/acl.conf:/mosquitto/config/acl.conf:ro
       - cert-broker:/mosquitto/certs:ro
     networks:
       - maison-privee
