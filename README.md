@@ -91,6 +91,22 @@ Ces tests ont réussi sur l'Ubuntu de Benjamin le **28 octobre 2026**. Les fichi
 
 Pour tester la détection, `capteur-test` a volontairement un certificat accepté par le broker. Il est seulement inconnu du superviseur. En dehors des tests, un véritable objet non provisionné serait rejeté avant publication.
 
+## Notre démarche
+
+Nous avons d'abord fait fonctionner les capteurs et le superviseur. Ensuite, nous avons ajouté les certificats et les permissions MQTT, puis testé ce qui se passe quand un appareil ne respecte pas les règles.
+
+Nous avons rencontré deux problèmes pendant les essais : Docker refusait une configuration de ses journaux, puis Mosquitto signalait des permissions incorrectes sur son fichier ACL. Ilias a corrigé la configuration Docker et intégré les fichiers Mosquitto dans l'image du broker avec les bons droits. Nous avons ensuite relancé les tests sur Ubuntu.
+
+Pour revoir rapidement les tests principaux :
+
+```bash
+bash scripts/tester-projet.sh
+```
+
+Ilias a également ajouté `scripts/verifier-securite.sh`, qui examine plus de cas (certificat signé par une autre autorité, nom du serveur, secrets, etc.). C'est un contrôle complémentaire : il ne remplace pas les quatre preuves demandées par le sujet.
+
+Le détail des difficultés rencontrées figure dans `docs/JOURNAL_DU_PROJET.md`.
+
 ## Dossier et limites
 
 Le dossier d'examen se trouve dans `docs/dossier-IOT401.pdf`. Les mécanismes et questions pour l'oral sont expliqués dans `docs/EXPLICATIONS.md`.

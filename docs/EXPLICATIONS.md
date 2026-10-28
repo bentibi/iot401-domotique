@@ -40,6 +40,12 @@ Sur l'ordinateur de Benjamin le 28/10/2026 :
 
 Sur l'ordinateur d'Ilias, une capture montre également les quatre mesures dans les logs du superviseur. Les sorties des tests sont dans `preuves/`.
 
+## Ce qui nous a posé problème
+
+Au premier essai, Docker ne lançait pas les conteneurs à cause des options de journaux. Après la correction de `compose.yaml`, la chaîne fonctionnait. Mosquitto affichait encore des avertissements pour `acl.conf`, car le fichier était monté en lecture seule avec des droits inadaptés. La configuration a été déplacée dans l'image du broker et les permissions ont été fixées au moment de la construction.
+
+Les quatre tests d'audit ont réussi après cette correction. Le script avancé ajouté ensuite par Ilias doit encore avoir sa propre sortie d'exécution conservée si nous voulons l'utiliser comme preuve supplémentaire.
+
 ## Les notions à savoir expliquer
 
 **MQTT :** protocole de messages en publication/abonnement, bien adapté aux petites mesures.
