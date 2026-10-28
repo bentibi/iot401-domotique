@@ -1,0 +1,2 @@
+superviseur-1  | [ALERTE INTRUSION] Objet inconnu : topic=maison/capteur-test/etat
+superviseur-1  | [ALERTE SEUIL] maison/temp-salon/temperature : 35.5 °C > 30.0 °C

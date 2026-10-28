@@ -1,0 +1,8 @@
+NAME                                          IMAGE                                                                     COMMAND                  SERVICE              CREATED          STATUS                    PORTS
+benjamin_depot_initial-broker-1               eclipse-mosquitto:2.0.22                                                  "/docker-entrypoint.…"   broker               12 seconds ago   Up Less than a second     1883/tcp
+benjamin_depot_initial-initialisation-pki-1   sha256:93fb1e178406e960530f1c4d85dbf58ddc55059a08fd8667afb5f3968fbc74c1   "python /app/pki.py"     initialisation-pki   25 minutes ago   Exited (0) 1 second ago   
+benjamin_depot_initial-presence-entree-1      benjamin_depot_initial-presence-entree                                    "python /app/capteur…"   presence-entree      11 seconds ago   Up Less than a second     
+benjamin_depot_initial-superviseur-1          benjamin_depot_initial-superviseur                                        "python /app/supervi…"   superviseur          11 seconds ago   Up Less than a second     
+benjamin_depot_initial-temp-chambre-1         benjamin_depot_initial-temp-chambre                                       "python /app/capteur…"   temp-chambre         11 seconds ago   Up Less than a second     
+benjamin_depot_initial-temp-cuisine-1         benjamin_depot_initial-temp-cuisine                                       "python /app/capteur…"   temp-cuisine         11 seconds ago   Up Less than a second     
+benjamin_depot_initial-temp-salon-1           benjamin_depot_initial-temp-salon                                         "python /app/capteur…"   temp-salon           11 seconds ago   Up Less than a second     

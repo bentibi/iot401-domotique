@@ -1,0 +1,10 @@
+test_format_invalide (test_superviseur.TestSuperviseur.test_format_invalide) ... ok
+test_objet_inconnu (test_superviseur.TestSuperviseur.test_objet_inconnu) ... ok
+test_presence (test_superviseur.TestSuperviseur.test_presence) ... ok
+test_seuil (test_superviseur.TestSuperviseur.test_seuil) ... ok
+test_temperature_normale (test_superviseur.TestSuperviseur.test_temperature_normale) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+OK

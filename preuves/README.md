@@ -1,13 +1,19 @@
-# Preuves à réaliser sur votre Ubuntu
+# Nos preuves de fonctionnement
 
-Aucune capture n'est simulée ou inventée. Après l'exécution des commandes du README :
+Tous les résultats ci-dessous viennent des essais sur Ubuntu, le 28 octobre 2026.
 
-1. `preuve-chaine.png` : `docker compose logs --tail=20 superviseur`, mesures reçues.
-2. `preuve-mtls.png` : `docker compose run --rm audit-sans-certificat` avec message de refus + éventuellement logs du broker.
-3. `preuve-acl-rc135.png` : `docker compose run --rm audit-acl` et la ligne `RC:135`.
-4. `preuve-intrusion.png` : `docker compose run --rm audit-intrusion` puis `docker compose logs --tail=20 superviseur` montrant l'alerte.
-5. `preuve-seuil.png` : `docker compose run --rm audit-seuil` puis logs superviseur montrant >30 °C.
-6. `preuve-segmentation.png` : `docker compose ps` (aucun port hôte exposé) + extrait compose réseau `internal: true`.
+| Fichier | Ce qu'on voit |
+|---|---|
+| `preuve-infrastructure.txt` | Conteneurs Docker démarrés. |
+| `preuve-chaine.txt` | Réception des quatre mesures dans le superviseur. |
+| `preuve-tests-unitaires.txt` | Cinq tests Python réussis. |
+| `preuve-audit-sans-certificat.txt` | Le broker coupe la connexion sans certificat. |
+| `preuve-audit-acl.txt` | Publication interdite refusée, `RC:135`. |
+| `preuve-audit-intrusion.txt` | Publication acceptée pour `capteur-test`, volontairement hors allowlist. |
+| `preuve-audit-seuil.txt` | Envoi d'une mesure de 35,5 °C. |
+| `preuve-alertes.txt` | Les alertes intrusion et seuil dans le superviseur. |
+| `fonctionnement-superviseur-ilias.png` | Capture du fonctionnement sur le deuxième PC. |
 
-Conseil : utiliser l'outil Capture d'écran Ubuntu, sauvegarder ici les captures
-et ajouter les captures à l'archive Classroom (pas nécessairement au GitHub public).
+**Pour le rendu :** ajouter aussi des captures de terminal des tests mTLS, ACL et intrusion (ou un enregistrement de session), comme le demande le sujet. Les fichiers texte seuls ne remplacent pas cette obligation.
+
+Attention : le test intrusion utilise un capteur de démonstration muni d'un certificat. Il teste la liste blanche du superviseur, pas le contournement de mTLS.

@@ -1,7 +1,4 @@
-"""Tests de démonstration demandés dans le barème IOT401.
-
-Ne fonctionne que sur le réseau privé Docker du laboratoire.
-"""
+"""Quatre tests de sécurité lancés dans le réseau Docker du projet."""
 import json
 import socket
 import sys
@@ -12,50 +9,60 @@ from commun import creer_client, HOTE, PORT
 
 
 def verifier_broker():
+    # Le broker doit déjà répondre avant d'essayer un test.
     with socket.create_connection((HOTE, PORT), timeout=4):
         pass
 
 
 def sans_certificat():
     verifier_broker()
-    connecte = threading.Event()
-    deconnecte = threading.Event()
-    client = creer_client('test', identifiant_client='audit-sans-certificat', avec_certificat=False)
-    client.on_connect = lambda c, u, f, rc, p: connecte.set() if not rc.is_failure else deconnecte.set()
-    client.on_disconnect = lambda c, u, flags, rc, properties: deconnecte.set()
+    connexion = threading.Event()
+    deconnexion = threading.Event()
+    client = creer_client('test', 'audit-sans-certificat', avec_certificat=False)
+
+    def on_connect(c, donnees, flags, code, proprietes):
+        if code.is_failure:
+            deconnexion.set()
+        else:
+            connexion.set()
+
+    def on_disconnect(c, donnees, flags, code, proprietes):
+        deconnexion.set()
+
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+
     try:
         client.connect(HOTE, PORT, keepalive=10)
         client.loop_start()
-        deconnecte.wait(7)
-        if connecte.is_set():
-            raise AssertionError('ECHEC : connexion sans certificat acceptée')
-        if not deconnecte.is_set():
-            raise AssertionError('INCONCLUANT : pas de réponse, vérifier les logs broker')
+        deconnexion.wait(7)
+
+        if connexion.is_set():
+            raise AssertionError('ECHEC : le broker a accepté un client sans certificat')
+        if not deconnexion.is_set():
+            raise AssertionError('INCONCLUANT : vérifier les logs du broker')
         print('[PREUVE mTLS] OK : le broker a coupé la connexion sans certificat client.')
-    except (OSError, ConnectionError) as erreur:
-        # Le port a été vérifié juste avant : il s'agit du refus TLS.
+    except OSError as erreur:
         print(f'[PREUVE mTLS] OK : échec TLS sans certificat client : {erreur}')
     finally:
         client.loop_stop()
         client.disconnect()
 
 
-def publier_et_verifier(identite, topic, valeur, attente_135=False):
+def publier_et_verifier(identite, topic, valeur, refus_attendu=False):
     verifier_broker()
     connexion = threading.Event()
     publication = threading.Event()
-    recus = []
+    codes = []
     client = creer_client(identite, f'audit-{identite}-{int(time.time())}')
 
-    def on_connect(c, u, f, rc, properties):
-        if rc.is_failure:
-            print(f'[ERREUR] échec de connexion : {rc}')
-            return
-        connexion.set()
-        c.publish(topic, json.dumps({'valeur': valeur}), qos=1, retain=False)
+    def on_connect(c, donnees, flags, code, proprietes):
+        if not code.is_failure:
+            connexion.set()
+            c.publish(topic, json.dumps({'valeur': valeur}), qos=1, retain=False)
 
-    def on_publish(c, u, mid, reason_code, properties):
-        recus.append(reason_code.value)
+    def on_publish(c, donnees, message_id, code, proprietes):
+        codes.append(code.value)
         publication.set()
 
     client.on_connect = on_connect
@@ -66,31 +73,34 @@ def publier_et_verifier(identite, topic, valeur, attente_135=False):
         if not connexion.wait(8):
             raise RuntimeError('Connexion MQTT impossible : voir les logs du broker')
         if not publication.wait(8):
-            raise RuntimeError('Aucun PUBACK reçu : voir les logs du broker')
-        code = recus[0]
-        if attente_135:
+            raise RuntimeError('Aucun PUBACK reçu')
+
+        code = codes[0]
+        if refus_attendu:
             if code != 135:
-                raise AssertionError(f'RC attendu 135, reçu {code}')
-            print(f'[PREUVE ACL] OK : publication interdite refusée, RC:{code}')
+                raise AssertionError(f'RC attendu : 135, RC reçu : {code}')
+            print('[PREUVE ACL] OK : publication interdite refusée, RC:135')
         else:
             if code != 0:
-                raise AssertionError(f'Publication attendue autorisée, RC:{code}')
-            print(f'[PREUVE MQTT] OK : publication acceptée, RC:{code} sur {topic}')
-            # Donne le temps au superviseur de recevoir le message avant la fin du test.
+                raise AssertionError(f'Publication refusée, RC:{code}')
+            print(f'[PREUVE MQTT] OK : publication acceptée, RC:0 sur {topic}')
             time.sleep(1)
     finally:
         client.disconnect()
         client.loop_stop()
 
 
-MODES = {
-    'sans-certificat': sans_certificat,
-    'acl': lambda: publier_et_verifier('temp-salon', 'maison/temp-chambre/temperature', 99, True),
-    'intrusion': lambda: publier_et_verifier('capteur-test', 'maison/capteur-test/etat', True),
-    'seuil': lambda: publier_et_verifier('temp-salon', 'maison/temp-salon/temperature', 35.5),
-}
-
 if __name__ == '__main__':
-    if len(sys.argv) != 2 or sys.argv[1] not in MODES:
-        raise SystemExit('Usage : python audit.py ' + '|'.join(MODES))
-    MODES[sys.argv[1]]()
+    if len(sys.argv) != 2:
+        raise SystemExit('Usage : python audit.py [sans-certificat|acl|intrusion|seuil]')
+    test = sys.argv[1]
+    if test == 'sans-certificat':
+        sans_certificat()
+    elif test == 'acl':
+        publier_et_verifier('temp-salon', 'maison/temp-chambre/temperature', 99, True)
+    elif test == 'intrusion':
+        publier_et_verifier('capteur-test', 'maison/capteur-test/etat', True)
+    elif test == 'seuil':
+        publier_et_verifier('temp-salon', 'maison/temp-salon/temperature', 35.5)
+    else:
+        raise SystemExit('Test inconnu : ' + test)
