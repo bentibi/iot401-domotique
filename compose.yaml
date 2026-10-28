@@ -1,0 +1,132 @@
+# Examen IOT401 - Maison connectée (Benjamin TIBI et Ilias EL HOUZI)
+# Aucun port publié sur l'hôte, et un volume distinct par identité.
+x-logs: &logs
+  driver: local
+  options:
+    max-size: "1m"
+    max-file: "1"
+
+x-application: &application
+  build:
+    context: .
+    dockerfile: app/Dockerfile
+  networks:
+    - maison-privee
+  restart: unless-stopped
+  logging: *logs
+  depends_on:
+    broker:
+      condition: service_started
+
+services:
+  initialisation-pki:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    command: ["python", "/app/pki.py"]
+    network_mode: none
+    restart: "no"
+    volumes:
+      - ca-privee:/volumes/autorite
+      - cert-broker:/volumes/broker
+      - cert-presence:/volumes/presence-entree
+      - cert-salon:/volumes/temp-salon
+      - cert-chambre:/volumes/temp-chambre
+      - cert-cuisine:/volumes/temp-cuisine
+      - cert-superviseur:/volumes/superviseur
+      - cert-test:/volumes/capteur-test
+
+  broker:
+    image: eclipse-mosquitto:2.0.22
+    depends_on:
+      initialisation-pki:
+        condition: service_completed_successfully
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/acl.conf:/mosquitto/config/acl.conf:ro
+      - cert-broker:/mosquitto/certs:ro
+    networks:
+      - maison-privee
+    restart: unless-stopped
+    logging: *logs
+    # PAS de "ports:" : MQTT inaccessible depuis le réseau de l'hôte.
+
+  presence-entree:
+    <<: *application
+    environment:
+      CAPTEUR_ID: presence-entree
+    volumes:
+      - cert-presence:/certs:ro
+
+  temp-salon:
+    <<: *application
+    environment:
+      CAPTEUR_ID: temp-salon
+    volumes:
+      - cert-salon:/certs:ro
+
+  temp-chambre:
+    <<: *application
+    environment:
+      CAPTEUR_ID: temp-chambre
+    volumes:
+      - cert-chambre:/certs:ro
+
+  temp-cuisine:
+    <<: *application
+    environment:
+      CAPTEUR_ID: temp-cuisine
+    volumes:
+      - cert-cuisine:/certs:ro
+
+  superviseur:
+    <<: *application
+    command: ["python", "/app/superviseur.py"]
+    volumes:
+      - cert-superviseur:/certs:ro
+
+  audit-sans-certificat:
+    <<: *application
+    profiles: ["audit"]
+    restart: "no"
+    command: ["python", "/app/audit.py", "sans-certificat"]
+    volumes:
+      - cert-test:/certs:ro
+
+  audit-acl:
+    <<: *application
+    profiles: ["audit"]
+    restart: "no"
+    command: ["python", "/app/audit.py", "acl"]
+    volumes:
+      - cert-salon:/certs:ro
+
+  audit-intrusion:
+    <<: *application
+    profiles: ["audit"]
+    restart: "no"
+    command: ["python", "/app/audit.py", "intrusion"]
+    volumes:
+      - cert-test:/certs:ro
+
+  audit-seuil:
+    <<: *application
+    profiles: ["audit"]
+    restart: "no"
+    command: ["python", "/app/audit.py", "seuil"]
+    volumes:
+      - cert-salon:/certs:ro
+
+networks:
+  maison-privee:
+    internal: true
+
+volumes:
+  ca-privee:
+  cert-broker:
+  cert-presence:
+  cert-salon:
+  cert-chambre:
+  cert-cuisine:
+  cert-superviseur:
+  cert-test:
